@@ -1,16 +1,18 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 
 class SourceOfTruth(BaseModel):
     topic: str
-    key_facts: List[str]
-    dates: List[str]
-    numbers: List[str]
-    locations: List[str]
-    entities: List[str]
-    instructions: List[str]
-    warnings: List[str]
-    context: str
+    key_facts: Optional[List[str]] = Field(default_factory=list)
+    dates: List[str] = Field(default_factory=list)
+    numbers: Optional[List[str]] = Field(default_factory=list)
+    locations: List[str] = Field(default_factory=list)
+    entities: Optional[List[str]] = Field(default_factory=list)
+    instructions: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    context: str = ""
+    contact: Optional[List[str]] = Field(default_factory=list)
+    constraints: Optional[List[str]] = Field(default_factory=list)
 
 class CommunicationRequest(BaseModel):
     roles: List[str]
@@ -39,3 +41,9 @@ class FinalPackage(BaseModel):
 
 class ProcessDocumentRequest(BaseModel):
     text: str
+
+class UploadResponse(BaseModel):
+    filename: str
+    file_type: str
+    extracted_text: str
+    source_of_truth: SourceOfTruth

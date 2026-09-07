@@ -1,17 +1,25 @@
 import os
 import uuid
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from models import ProcessDocumentRequest, CommunicationRequest, SourceOfTruth, GeneratedContent, ValidationResult
+from models import (
+    ProcessDocumentRequest, 
+    CommunicationRequest, 
+    SourceOfTruth, 
+    GeneratedContent, 
+    ValidationResult,
+    UploadResponse
+)
 from llm_provider import LLMProvider
 from gemini_provider import GeminiProvider
 from mock_provider import MockProvider
+from document_parser import extract_text_from_file
 
 load_dotenv()
 
-app = FastAPI(title="COMMUNI-AI Backend")
+app = FastAPI(title="NEXORA AI Backend", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,12 +30,55 @@ app.add_middleware(
 )
 
 api_key = os.getenv("GEMINI_API_KEY")
-provider: LLMProvider = GeminiProvider(api_key) if api_key else MockProvider()
+is_gemini = bool(api_key and len(api_key) > 5)
+provider: LLMProvider = GeminiProvider(api_key) if is_gemini else MockProvider()
+
+@app.get("/api/health")
+def health_check():
+    return {
+        "status": "ok",
+        "service": "Nexora AI Orchestration Engine",
+        "mode": "gemini" if is_gemini else "demo",
+        "provider": "Gemini 1.5 Flash" if is_gemini else "Built-in Autonomous Mock Provider"
+    }
+
+@app.post("/api/upload", response_model=UploadResponse)
+async def upload_document(file: UploadFile = File(...)):
+    """
+    Accepts TXT, PDF, or DOCX documents, extracts text preserving Unicode,
+    and returns extracted text and initial structured Source of Truth.
+    """
+    try:
+        content_bytes = await file.read()
+        if not content_bytes:
+            raise HTTPException(status_code=400, detail="Empty file uploaded.")
+        
+        extracted_text = extract_text_from_file(content_bytes, file.filename)
+        if not extracted_text.strip():
+            raise HTTPException(status_code=400, detail="Unable to extract text from this file.")
+        
+        sot = provider.extract_source_of_truth(extracted_text)
+        ext = file.filename.lower().split('.')[-1] if '.' in file.filename else 'unknown'
+        
+        return UploadResponse(
+            filename=file.filename,
+            file_type=ext.upper(),
+            extracted_text=extracted_text,
+            source_of_truth=sot
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/extract", response_model=SourceOfTruth)
 def extract_source_of_truth(req: ProcessDocumentRequest):
     try:
+        if not req.text or not req.text.strip():
+            raise HTTPException(status_code=400, detail="Document text cannot be empty.")
         return provider.extract_source_of_truth(req.text)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
