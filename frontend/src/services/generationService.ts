@@ -1,6 +1,5 @@
 import type { GeneratedContent, SourceOfTruth } from '../types';
-
-const API_BASE = 'http://localhost:8000/api';
+import { API_BASE } from '../apiConfig';
 
 export function createLocalContent(
   sot: SourceOfTruth,

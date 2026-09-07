@@ -21,6 +21,7 @@ import FinalPackage from './components/FinalPackage';
 import type { SourceOfTruth, GeneratedContent, ValidationResult } from './types';
 import { DEMO_SOURCE_OF_TRUTH } from './services/sourceOfTruthService';
 import { validationService } from './services/validationService';
+import { API_BASE } from './apiConfig';
 
 const steps = [
   { id: 1, name: 'SOURCE', shortName: 'Source', icon: FileText },
@@ -44,7 +45,7 @@ export default function App() {
 
   // Probe backend health
   useEffect(() => {
-    fetch('http://localhost:8000/api/health')
+    fetch(`${API_BASE}/health`)
       .then(res => res.json())
       .then(data => {
         if (data.status === 'ok') {
@@ -198,7 +199,7 @@ export default function App() {
               {/* Status Dot */}
               <div 
                 className="hidden sm:flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-800 text-[11px] text-stone-400"
-                title={backendOnline ? `Backend API connected on port 8000 (${backendMode})` : 'Autonomous Client Engine active'}
+                title={backendOnline ? `Backend API connected (${backendMode})` : 'Autonomous Client Engine active'}
               >
                 <span className={`w-2 h-2 rounded-full ${backendOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
                 <span>{backendOnline ? (backendMode === 'gemini' ? 'Gemini Live' : 'API Online') : 'Local'}</span>

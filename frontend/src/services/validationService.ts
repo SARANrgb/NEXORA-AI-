@@ -1,12 +1,11 @@
 import type { SourceOfTruth, ValidationResult, FactValidationItem } from '../types';
+import { API_BASE } from '../apiConfig';
 
 export const FLAWED_DEMO_TEXT =
   "Heavy rainfall is expected in District A and District B until August 24.";
 
 export const CORRECTED_DEMO_TEXT =
   "Heavy rainfall is expected in District A, District B and District C from August 23–25. Fishermen should not venture into the sea. Emergency response teams should remain active.";
-
-const API_BASE = 'http://localhost:8000/api';
 
 export const validationService = {
   getFlawedDemoText(): string {

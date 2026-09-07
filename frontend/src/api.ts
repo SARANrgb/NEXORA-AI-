@@ -1,6 +1,5 @@
 import type { SourceOfTruth, GeneratedContent, ValidationResult } from './types';
-
-const API_BASE = 'http://localhost:8000/api';
+import { API_BASE } from './apiConfig';
 
 const MOCK_SOURCE_OF_TRUTH: SourceOfTruth = {
   topic: "Heavy Rainfall Warning",

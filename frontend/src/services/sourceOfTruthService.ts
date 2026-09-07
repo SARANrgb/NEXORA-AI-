@@ -1,4 +1,5 @@
 import type { SourceOfTruth } from '../types';
+import { API_BASE } from '../apiConfig';
 
 export const DEMO_SOURCE_TEXT =
   "Heavy rainfall is expected in District A, District B and District C from August 23–25. Fishermen should not venture into the sea. Emergency response teams should remain active.";
@@ -38,8 +39,6 @@ export const SAMPLE_PRESETS = [
     text: "Severe cyclonic storm forecast for Coastal Zone 1 and Zone 2 from October 12–14. Wind gusts up to 90 km/h. Coastal evacuations must proceed before 18:00 hrs on October 12. Power utilities on standby."
   }
 ];
-
-const API_BASE = 'http://localhost:8000/api';
 
 export const sourceOfTruthService = {
   getDemoText(): string {

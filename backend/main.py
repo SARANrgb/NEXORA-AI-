@@ -21,13 +21,28 @@ load_dotenv()
 
 app = FastAPI(title="NEXORA AI Backend", version="1.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_origins_env = os.getenv("CORS_ORIGINS", "*")
+if cors_origins_env == "*":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    allowed_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+    for local in ["http://localhost:5173", "http://127.0.0.1:5173"]:
+        if local not in allowed_origins:
+            allowed_origins.append(local)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_origin_regex=r"https://.*\.trycloudflare\.com|https://.*\.vercel\.app|https://.*\.onrender\.com",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 api_key = os.getenv("GEMINI_API_KEY")
 is_gemini = bool(api_key and len(api_key) > 5)
