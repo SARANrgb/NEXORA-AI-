@@ -2,15 +2,24 @@ import os
 import json
 from llm_provider import LLMProvider
 from models import SourceOfTruth, ValidationResult
+from mock_provider import MockProvider
 import google.generativeai as genai
 
 class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.fallback = MockProvider()
+        self.model = None
+        try:
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
+        except Exception as e:
+            print(f"Gemini configure warning: {e}")
+            self.model = None
 
     def extract_source_of_truth(self, text: str) -> SourceOfTruth:
-        prompt = f"""Extract the following information from the text and return as a JSON object.
+        if self.model:
+            try:
+                prompt = f"""Extract the following information from the text and return as a JSON object.
 Text: "{text}"
 
 JSON schema required:
@@ -27,17 +36,23 @@ JSON schema required:
 }}
 Return ONLY valid JSON.
 """
-        response = self.model.generate_content(prompt)
-        content = response.text
-        if content.startswith("```json"):
-            content = content[7:-3]
-        elif content.startswith("```"):
-            content = content[3:-3]
-        data = json.loads(content.strip())
-        return SourceOfTruth(**data)
+                response = self.model.generate_content(prompt)
+                content = response.text.strip()
+                if content.startswith("```json"):
+                    content = content[7:-3]
+                elif content.startswith("```"):
+                    content = content[3:-3]
+                data = json.loads(content.strip())
+                return SourceOfTruth(**data)
+            except Exception as e:
+                print(f"Gemini extract error: {e}, falling back to built-in extractor")
+
+        return self.fallback.extract_source_of_truth(text)
 
     def generate_communication(self, sot: SourceOfTruth, role: str, format: str, language: str, channel: str) -> str:
-        prompt = f"""Generate a communication package based on the following Source of Truth.
+        if self.model:
+            try:
+                prompt = f"""Generate a communication package based on the following Source of Truth.
         
 Topic: {sot.topic}
 Key Facts: {', '.join(sot.key_facts)}
@@ -56,11 +71,17 @@ Channel: {channel}
 
 Write the content in the target language. Do not output anything other than the requested content.
 """
-        response = self.model.generate_content(prompt)
-        return response.text.strip()
+                response = self.model.generate_content(prompt)
+                return response.text.strip()
+            except Exception as e:
+                print(f"Gemini generate error: {e}, falling back to built-in generator")
+
+        return self.fallback.generate_communication(sot, role, format, language, channel)
 
     def validate_content(self, sot: SourceOfTruth, generated_content: str) -> ValidationResult:
-        prompt = f"""Validate if the generated content preserves the critical facts from the Source of Truth.
+        if self.model:
+            try:
+                prompt = f"""Validate if the generated content preserves the critical facts from the Source of Truth.
 
 Source of Truth:
 Dates: {', '.join(sot.dates)}
@@ -84,11 +105,16 @@ Return a JSON object with this exact structure:
 }}
 Return ONLY valid JSON.
 """
-        response = self.model.generate_content(prompt)
-        content = response.text
-        if content.startswith("```json"):
-            content = content[7:-3]
-        elif content.startswith("```"):
-            content = content[3:-3]
-        data = json.loads(content.strip())
-        return ValidationResult(**data)
+                response = self.model.generate_content(prompt)
+                content = response.text.strip()
+                if content.startswith("```json"):
+                    content = content[7:-3]
+                elif content.startswith("```"):
+                    content = content[3:-3]
+                data = json.loads(content.strip())
+                return ValidationResult(**data)
+            except Exception as e:
+                print(f"Gemini validate error: {e}, falling back to built-in validator")
+
+        return self.fallback.validate_content(sot, generated_content)
+
