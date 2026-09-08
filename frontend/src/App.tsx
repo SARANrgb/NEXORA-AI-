@@ -41,7 +41,8 @@ export default function App() {
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [backendOnline, setBackendOnline] = useState(false);
-  const [backendMode, setBackendMode] = useState<'demo' | 'gemini'>('demo');
+  const [backendMode, setBackendMode] = useState<'local' | 'fallback' | 'offline'>('fallback');
+  const [backendModel, setBackendModel] = useState<string | null>(null);
 
   // Probe backend health
   useEffect(() => {
@@ -50,16 +51,18 @@ export default function App() {
       .then(data => {
         if (data.status === 'ok') {
           setBackendOnline(true);
-          if (data.mode === 'gemini') {
-            setBackendMode('gemini');
+          if (data.mode === 'local') {
+            setBackendMode('local');
+            setBackendModel(data.model || 'Open-Source LLM');
           } else {
-            setBackendMode('demo');
+            setBackendMode('fallback');
+            setBackendModel(null);
           }
         }
       })
       .catch(() => {
         setBackendOnline(false);
-        setBackendMode('demo');
+        setBackendMode('offline');
       });
   }, []);
 
@@ -196,13 +199,27 @@ export default function App() {
                 <span>{isDemoMode ? '[ DEMO MODE ]' : '[ UPLOADED SOURCE ]'}</span>
               </button>
 
-              {/* Status Dot */}
+              {/* Status Badge */}
               <div 
-                className="hidden sm:flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-800 text-[11px] text-stone-400"
-                title={backendOnline ? `Backend API connected (${backendMode})` : 'Autonomous Client Engine active'}
+                className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-800 text-[11px] font-mono"
+                title={
+                  backendOnline 
+                    ? backendMode === 'local'
+                      ? `Local Open-Source LLM Active (${backendModel})`
+                      : 'Local AI Ready • Demo Fallback Active (Deterministic Engine)'
+                    : 'Autonomous Client Engine Active'
+                }
               >
-                <span className={`w-2 h-2 rounded-full ${backendOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                <span>{backendOnline ? (backendMode === 'gemini' ? 'Gemini Live' : 'API Online') : 'Local'}</span>
+                <span className={`w-2 h-2 rounded-full ${
+                  backendOnline 
+                    ? (backendMode === 'local' ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-amber-400') 
+                    : 'bg-stone-500'
+                }`}></span>
+                <span className={backendOnline ? (backendMode === 'local' ? 'text-emerald-400 font-bold' : 'text-stone-300') : 'text-stone-500'}>
+                  {backendOnline 
+                    ? (backendMode === 'local' ? `LOCAL AI: ${backendModel}` : 'DEMO FALLBACK') 
+                    : 'LOCAL ENGINE'}
+                </span>
               </div>
 
               {/* Mobile menu toggle */}

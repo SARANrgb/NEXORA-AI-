@@ -12,10 +12,15 @@ from models import (
     ValidationResult,
     UploadResponse
 )
-from llm_provider import LLMProvider
-from gemini_provider import GeminiProvider
-from mock_provider import MockProvider
+from llm_provider import LLMProvider, LocalNPUProvider
+from mock_provider import MockProvider, DemoProvider
+from local_llm_provider import LocalLLMProvider
 from document_parser import extract_text_from_file
+
+try:
+    from gemini_provider import GeminiProvider
+except Exception:
+    GeminiProvider = None
 
 load_dotenv()
 
@@ -44,18 +49,52 @@ else:
         allow_headers=["*"],
     )
 
-api_key = os.getenv("GEMINI_API_KEY")
-is_gemini = bool(api_key and len(api_key) > 5)
-provider: LLMProvider = GeminiProvider(api_key) if is_gemini else MockProvider()
+# Primary architecture: LocalLLMProvider with DemoProvider fallback
+# Gemini is optional/deprecated legacy and never required.
+use_legacy_gemini = os.getenv("USE_GEMINI", "false").lower() == "true" and bool(os.getenv("GEMINI_API_KEY"))
+if use_legacy_gemini and GeminiProvider:
+    provider: LLMProvider = GeminiProvider(os.getenv("GEMINI_API_KEY"))
+else:
+    provider: LLMProvider = LocalLLMProvider()
 
 @app.get("/api/health")
 def health_check():
-    return {
-        "status": "ok",
-        "service": "Nexora AI Orchestration Engine",
-        "mode": "gemini" if is_gemini else "demo",
-        "provider": "Gemini 1.5 Flash" if is_gemini else "Built-in Autonomous Mock Provider"
-    }
+    if isinstance(provider, LocalLLMProvider):
+        is_local_available = provider.check_availability()
+        if is_local_available:
+            return {
+                "status": "ok",
+                "service": "Nexora AI Orchestration Engine",
+                "provider": "LocalLLMProvider",
+                "mode": "local",
+                "model": provider.model_name,
+                "endpoint": provider.base_url
+            }
+        else:
+            return {
+                "status": "ok",
+                "service": "Nexora AI Orchestration Engine",
+                "provider": "DemoProvider",
+                "mode": "fallback",
+                "detail": "Local LLM endpoint unreachable, operating in deterministic fallback mode",
+                "local_endpoint": provider.base_url,
+                "local_model": provider.model_name
+            }
+    elif isinstance(provider, (DemoProvider, MockProvider)):
+        return {
+            "status": "ok",
+            "service": "Nexora AI Orchestration Engine",
+            "provider": "DemoProvider",
+            "mode": "fallback",
+            "detail": "Deterministic Demo Provider active"
+        }
+    else:
+        return {
+            "status": "ok",
+            "service": "Nexora AI Orchestration Engine",
+            "provider": getattr(provider, "__class__", type(provider)).__name__,
+            "mode": "legacy"
+        }
 
 @app.post("/api/upload", response_model=UploadResponse)
 async def upload_document(file: UploadFile = File(...)):

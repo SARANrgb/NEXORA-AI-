@@ -6,10 +6,11 @@ class LLMProvider(ABC):
     """
     Core LLM / Inference Engine Interface for Nexora AI.
     
-    Modular abstraction designed to support:
-    - Built-in Autonomous Demo Engine (DemoProvider / MockProvider)
-    - Cloud Generative AI (GeminiProvider)
-    - On-Device / Edge NPU Inference (Snapdragon NPU / LocalProvider)
+    Modular architecture:
+    - DemoProvider: Built-in deterministic ground-truth engine (MockProvider)
+    - LocalLLMProvider: Open-source local inference (Ollama / OpenAI-compatible)
+    - LocalNPUProvider: Architecture for on-device Snapdragon / edge NPU integration
+    - GeminiProvider: (Optional / Deprecated legacy provider)
     """
     
     @abstractmethod

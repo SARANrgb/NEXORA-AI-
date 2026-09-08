@@ -23,8 +23,11 @@ For assistance, contact health helpline 104."""
 
 print("1. Testing /health...")
 res = requests.get(f"{BASE}/health")
-print("Health status:", res.status_code, res.json())
+health_data = res.json()
+print("Health status:", res.status_code, health_data)
 assert res.status_code == 200
+assert health_data.get("provider") in ["LocalLLMProvider", "DemoProvider"]
+assert health_data.get("mode") in ["local", "fallback"]
 
 print("\n2. Testing /extract on Official Demo Directive...")
 extract_payload = {

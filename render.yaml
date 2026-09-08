@@ -12,5 +12,7 @@ services:
         value: 3.11.9
       - key: CORS_ORIGINS
         value: "*"
-      - key: GEMINI_API_KEY
-        sync: false
+      - key: LOCAL_LLM_BASE_URL
+        value: "http://localhost:11434"
+      - key: LOCAL_LLM_MODEL
+        value: "llama3"
