@@ -1,0 +1,66 @@
+{
+  "vercel_url": "https://frontend-xi-lovat-40.vercel.app",
+  "render_url": "https://nexora-ai-backend-6f4s.onrender.com",
+  "api_health": "200 OK",
+  "cors": "*",
+  "txt_upload": "SUCCESS (200 OK via Render /api/upload)",
+  "pdf_upload": "SUCCESS (200 OK via Render /api/upload)",
+  "docx_upload": "SUCCESS (200 OK via Render /api/upload)",
+  "source_a_sot": "Chennai Water Supply Maintenance | Location: Chennai | Date: 15 September 2026",
+  "source_b_sot": "Coimbatore Vaccination Camp | Location: Coimbatore | Date: 20 September 2026",
+  "source_a_sample_deliverable": "CITIZEN Public Advisory English WhatsApp PENDING URGENT PUBLIC ADVISORY: CHENNAI WATER SUPPLY MAINTENANCE Venue / Location: Chennai Date & Operational Time: 15 ",
+  "source_b_sample_deliverable": "CITIZEN Public Advisory English WhatsApp PENDING URGENT PUBLIC ADVISORY: PUBLIC HEALTH: COIMBATORE VACCINATION CAMP Venue / Location: Coimbatore Date & Operatio",
+  "validation": "PASS (Audit bounds strictly verified against Source of Truth)",
+  "export": "SUCCESS (Full multi-channel export packages generated)",
+  "localhost_references": "None in production bundle",
+  "network_calls_to_render": [
+    {
+      "method": "GET",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/health"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/upload"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/extract"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/generate"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/validate"
+    },
+    {
+      "method": "GET",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/health"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/upload"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/extract"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/generate"
+    },
+    {
+      "method": "GET",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/health"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/upload"
+    },
+    {
+      "method": "POST",
+      "url": "https://nexora-ai-backend-6f4s.onrender.com/api/extract"
+    }
+  ]
+}
