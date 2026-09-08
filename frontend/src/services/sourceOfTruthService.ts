@@ -102,10 +102,21 @@ export const sourceOfTruthService = {
     // Client-side fallback dynamic extractor
     const cleanText = text.trim();
     const lines = cleanText.split('\n').map(l => l.trim()).filter(Boolean);
-    let topic = lines[0] ? lines[0].replace(/^[#*_\-\s]+/, '').slice(0, 55).trim() : "Public Directive";
+    let topic = "Public Directive";
+    if (lines[0]) {
+      const firstLine = lines[0].replace(/^[#*_\-\s]+/, '').trim();
+      const eventMatch = firstLine.split(/\b(?:will occur|will be held|will take place|is scheduled|will be conducted|is planned)\b/i);
+      if (eventMatch.length > 1 && eventMatch[0].trim().length > 5) {
+        topic = eventMatch[0].trim();
+      } else {
+        topic = firstLine.slice(0, 55).trim();
+      }
+    }
 
     const dates: string[] = [];
-    const dateMatches = cleanText.match(/\b(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]* \d{1,2}(?:(?:–|-| to )\d{1,2})?(?:, \d{4})?\b/gi);
+    const monthNames = '(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*';
+    const dateRegex = new RegExp(`\\b(?:${monthNames}\\s+\\d{1,2}(?:st|nd|rd|th)?(?:(?:–|-| to )\\d{1,2})?(?:,?\\s+\\d{4})?|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:of\\s+)?${monthNames}(?:,?\\s+\\d{4})?)\\b`, 'gi');
+    const dateMatches = cleanText.match(dateRegex);
     if (dateMatches) {
       dateMatches.forEach(d => { if (!dates.includes(d)) dates.push(d); });
     }
@@ -117,6 +128,12 @@ export const sourceOfTruthService = {
         const cleaned = v.replace(/^(?:at|in|venue:?)\s+/i, '').trim();
         if (cleaned && !locs.includes(cleaned)) locs.push(cleaned);
       });
+    }
+
+    for (const place of ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "District A", "District B", "District C", "District D"]) {
+      if (new RegExp(`\\b${place}\\b`, 'i').test(cleanText) && !locs.includes(place)) {
+        locs.push(place);
+      }
     }
 
     const sentences = cleanText.split(/[.\n]+/).map(s => s.trim()).filter(s => s.length > 8);
@@ -131,12 +148,16 @@ export const sourceOfTruthService = {
 
     sentences.forEach(s => {
       const sl = s.toLowerCase();
-      if (sl.includes('warning') || sl.includes('should not') || sl.includes('must not') || sl.includes('avoid') || sl.includes('between 18 and 60') || sl.includes('participate')) {
+      if (sl.includes('warning') || sl.includes('should not') || sl.includes('must not') || sl.includes('avoid') || sl.includes('between 18 and 60') || sl.includes('participate') || sl.includes('mandatory')) {
         warnings.push(s.endsWith('.') ? s : s + '.');
-      } else if (sl.includes('conducted') || sl.includes('active') || sl.includes('contact') || sl.includes('carry') || sl.includes('should') || sl.includes('must')) {
+      } else if (sl.includes('conducted') || sl.includes('active') || sl.includes('contact') || sl.includes('carry') || sl.includes('should') || sl.includes('must') || sl.includes('occur') || sl.includes('maintenance') || sl.includes('camp') || sl.includes('vaccination')) {
         instructions.push(s.endsWith('.') ? s : s + '.');
       }
     });
+
+    if (instructions.length === 0 && sentences.length > 0) {
+      instructions.push(sentences[0].endsWith('.') ? sentences[0] : sentences[0] + '.');
+    }
 
     return {
       topic: topic.length > 0 ? topic : "Public Directive",

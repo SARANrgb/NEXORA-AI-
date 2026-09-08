@@ -37,13 +37,18 @@ class MockProvider(LLMProvider):
         lines = [l.strip() for l in text_clean.splitlines() if l.strip()]
         
         # Topic Extraction:
+        # Topic Extraction:
         # Check first non-empty line as candidate heading
         topic = "Public Notice & Directive"
         if lines:
             first_line = lines[0]
             # Strip markdown formatting
             first_line = re.sub(r'^[#*_\-\s]+', '', first_line).strip()
-            if len(first_line) <= 70 and not first_line.endswith('.'):
+            # If line has verbs indicating an event sentence, extract subject before verb:
+            event_split = re.split(r'\b(?:will occur|will be held|will take place|is scheduled|will be conducted|is planned)\b', first_line, flags=re.I)
+            if len(event_split) > 1 and len(event_split[0].strip()) > 5:
+                topic = event_split[0].strip().title()
+            elif len(first_line) <= 70 and not first_line.endswith('.'):
                 topic = first_line.title()
             else:
                 # Search for title-like phrase before colon or in first sentence
@@ -51,12 +56,19 @@ class MockProvider(LLMProvider):
                 if len(colon_split) > 1 and len(colon_split[0]) < 40:
                     topic = colon_split[0].strip().title()
                 else:
-                    topic = first_line[:50].strip().title()
+                    clause_split = re.split(r'[,.]', first_line)
+                    if clause_split and len(clause_split[0].strip()) > 5:
+                        topic = clause_split[0].strip()[:60].title()
+                    else:
+                        topic = first_line[:50].strip().title()
 
         # Dates Extraction:
         dates = []
-        month_pattern = r'\b(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]* \d{1,2}(?:(?:–|-| to )\d{1,2})?(?:, \d{4})?\b'
-        for m in re.finditer(month_pattern, text_clean, re.I):
+        month_names = r'(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*'
+        pattern_month_first = rf'\b{month_names}\s+\d{{1,2}}(?:st|nd|rd|th)?(?:(?:–|-| to )\d{{1,2}})?(?:,?\s+\d{{4}})?\b'
+        pattern_day_first = rf'\b\d{{1,2}}(?:st|nd|rd|th)?\s+(?:of\s+)?{month_names}(?:,?\s+\d{{4}})?\b'
+        combined_date_pattern = rf'(?:{pattern_month_first}|{pattern_day_first})'
+        for m in re.finditer(combined_date_pattern, text_clean, re.I):
             date_val = m.group(0).strip()
             if date_val not in dates:
                 dates.append(date_val)
@@ -115,8 +127,8 @@ class MockProvider(LLMProvider):
         warnings = []
         instructions = []
 
-        warning_keywords = ['warning', 'caution', 'alert', 'should not', 'must not', 'do not', 'avoid', 'mandatory', 'carry a valid', 'between 18 and 60', 'eligibility', 'eligible', 'prohibited']
-        instruction_keywords = ['conducted', 'held', 'participate', 'should', 'must', 'remain active', 'contact', 'call', 'register', 'carry', 'bring', 'report', 'follow', 'visit']
+        warning_keywords = ['warning', 'caution', 'alert', 'should not', 'must not', 'do not', 'avoid', 'mandatory', 'carry a valid', 'between 18 and 60', 'eligibility', 'eligible', 'prohibited', 'restriction', 'suspend']
+        instruction_keywords = ['conducted', 'held', 'participate', 'should', 'must', 'remain active', 'contact', 'call', 'register', 'carry', 'bring', 'report', 'follow', 'visit', 'occur', 'maintenance', 'camp', 'vaccination', 'advisory', 'scheduled', 'supply']
 
         for s in sentences:
             s_lower = s.lower()
@@ -142,7 +154,10 @@ class MockProvider(LLMProvider):
         if not warnings:
             warnings = ["Participants must comply with all official eligibility criteria and safety regulations."]
         if not instructions:
-            instructions = [f"Refer to designated liaison officers for operational execution regarding {topic}."]
+            if sentences:
+                instructions = [sentences[0] + ('' if sentences[0].endswith('.') else '.')]
+            else:
+                instructions = [f"Refer to designated liaison officers for operational execution regarding {topic}."]
         if not contacts:
             contacts = ["Official Inquiries Desk"]
 
